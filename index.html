@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ImpactPulse - NGO Volunteer Management Portal</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#ecfdf5',
+                            100: '#d1fae5',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                            800: '#065f46'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .animate-fade-in {
+            animation: fadeIn 0.25s ease-out forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col font-sans text-slate-800 antialiased">
+
+    <!-- Top Navigation & Role Switcher -->
+    <header class="bg-slate-900 text-white sticky top-0 z-30 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Brand Logo -->
+                <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('opportunities')">
+                    <div class="w-10 h-10 rounded-xl bg-brand-500 flex items-center justify-center text-slate-900 font-black text-xl shadow-lg shadow-brand-500/30">
+                        <i class="fa-solid fa-hands-holding-child text-white"></i>
+                    </div>
+                    <div>
+                        <span class="text-xl font-bold tracking-tight text-white">Impact<span class="text-brand-500">Pulse</span></span>
+                        <span class="block text-xs text-slate-400 font-medium">NGO Volunteer Portal</span>
+                    </div>
+                </div>
+
+                <!-- Navigation Links -->
+                <nav class="hidden md:flex items-center space-x-1" id="nav-links">
+                    <button onclick="switchTab('opportunities')" id="nav-opportunities" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors bg-slate-800 text-brand-500">
+                        <i class="fa-solid fa-heart-circle-plus mr-1.5"></i> Opportunities
+                    </button>
+                    <button onclick="switchTab('my-activities')" id="nav-my-activities" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors text-slate-300 hover:text-white hover:bg-slate-800">
+                        <i class="fa-solid fa-user-clock mr-1.5"></i> My Shifts & Hours
+                    </button>
+                    <button onclick="switchTab('coordinator')" id="nav-coordinator" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors text-slate-300 hover:text-white hover:bg-slate-800">
+                        <i class="fa-solid fa-list-check mr-1.5"></i> Volunteer Approvals
+                    </button>
+                    <button onclick="switchTab('analytics')" id="nav-analytics" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors text-slate-300 hover:text-white hover:bg-slate-800">
+                        <i class="fa-solid fa-chart-line mr-1.5"></i> Impact Analytics
+                    </button>
+                </nav>
+
+                <!-- Active Role Selector -->
+                <div class="flex items-center space-x-3">
+                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider hidden sm:inline">Role:</span>
+                    <select id="role-selector" onchange="handleRoleChange(this.value)" class="bg-slate-800 text-slate-200 border border-slate-700 text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        <option value="volunteer">Volunteer View</option>
+                        <option value="coordinator">Coordinator View</option>
+                        <option value="director">NGO Director View</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- TAB 1: OPPORTUNITIES BOARD -->
+        <section id="tab-opportunities" class="animate-fade-in space-y-6">
+            <!-- Header Banner -->
+            <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-brand-800 rounded-2xl p-6 sm:p-8 text-white shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                <div>
+                    <span class="px-3 py-1 bg-brand-500/20 text-brand-500 rounded-full text-xs font-semibold uppercase tracking-wider border border-brand-500/30">Make An Impact</span>
+                    <h1 class="text-2xl sm:text-3xl font-extrabold mt-2">Volunteer Drive & Event Programs</h1>
+                    <p class="text-slate-300 text-sm sm:text-base mt-1 max-w-2xl">Connect with community initiatives, contribute your unique skills, and track your verified volunteer service hours.</p>
+                </div>
+                <button onclick="openCreateModal()" id="btn-create-opportunity" class="hidden shrink-0 bg-brand-500 hover:bg-brand-600 text-slate-900 font-bold px-5 py-3 rounded-xl shadow-lg transition-all flex items-center space-x-2">
+                    <i class="fa-solid fa-plus"></i>
+                    <span>Create New Event</span>
+                </button>
+            </div>
+
+            <!-- Filters Bar -->
+            <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200 flex flex-col md:flex-row gap-4 items-center justify-between">
+                <!-- Search Input -->
+                <div class="relative w-full md:w-80">
+                    <i class="fa-solid fa-search absolute left-3.5 top-3 text-slate-400"></i>
+                    <input type="text" id="search-events" onkeyup="filterOpportunities()" placeholder="Search drive, location, or skill..." class="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                </div>
+
+                <!-- Filters -->
+                <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                    <select id="filter-cause" onchange="filterOpportunities()" class="border border-slate-300 rounded-lg text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        <option value="all">All Causes</option>
+                        <option value="Education">Education</option>
+                        <option value="Environment">Environment</option>
+                        <option value="Food Security">Food Security</option>
+                        <option value="Healthcare">Healthcare</option>
+                    </select>
+
+                    <select id="filter-commitment" onchange="filterOpportunities()" class="border border-slate-300 rounded-lg text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        <option value="all">All Commitments</option>
+                        <option value="One-time">One-time Event</option>
+                        <option value="Weekly">Weekly Regular</option>
+                        <option value="Flexible">Flexible Schedule</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Opportunities Grid -->
+            <div id="opportunities-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Cards dynamically populated via JS -->
+            </div>
+        </section>
+
+        <!-- TAB 2: MY ACTIVITIES & SHIFTS -->
+        <section id="tab-my-activities" class="hidden animate-fade-in space-y-6">
+            <!-- Volunteer Stats Bar -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-4">
+                    <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center font-bold text-xl">
+                        <i class="fa-solid fa-clock"></i>
+                    </div>
+                    <div>
+                        <span class="text-xs font-medium text-slate-500 uppercase">Logged Hours</span>
+                        <p class="text-2xl font-bold text-slate-900" id="stat-user-hours">28.5 hrs</p>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-4">
+                    <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xl">
+                        <i class="fa-solid fa-calendar-check"></i>
+                    </div>
+                    <div>
+                        <span class="text-xs font-medium text-slate-500 uppercase">Events Completed</span>
+                        <p class="text-2xl font-bold text-slate-900" id="stat-user-events">6</p>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-4">
+                    <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-xl">
+                        <i class="fa-solid fa-award"></i>
+                    </div>
+                    <div>
+                        <span class="text-xs font-medium text-slate-500 uppercase">Badge Tier</span>
+                        <p class="text-2xl font-bold text-amber-600" id="stat-user-badge">Silver Hero</p>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-4">
+                    <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold text-xl">
+                        <i class="fa-solid fa-certificate"></i>
+                    </div>
+                    <div>
+                        <button onclick="downloadCertificate()" class="text-xs font-bold text-purple-600 hover:text-purple-800 underline uppercase block">
+                            Generate
+                        </button>
+                        <p class="text-sm font-semibold text-slate-800">Verified Certificate</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Shift Management Table -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-5 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+                    <div>
+                        <h2 class="font-bold text-slate-800">My Applications & Enrolled Shifts</h2>
+                        <p class="text-xs text-slate-500">Track your attendance status and pending hours verification</p>
+                    </div>
+                    <button onclick="openLogHoursModal()" class="px-4 py-2 bg-brand-500 hover:bg-brand-600 text-slate-900 text-sm font-bold rounded-lg shadow-sm">
+                        <i class="fa-solid fa-plus-circle mr-1"></i> Self-Log Past Hours
+                    </button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-slate-600">
+                        <thead class="bg-slate-100 text-xs font-semibold uppercase text-slate-500 border-b border-slate-200">
+                            <tr>
+                                <th class="p-4">Event Name</th>
+                                <th class="p-4">Cause</th>
+                                <th class="p-4">Date & Time</th>
+                                <th class="p-4">Hours</th>
+                                <th class="p-4">Status</th>
+                                <th class="p-4 text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="user-shifts-list" class="divide-y divide-slate-200">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: COORDINATOR APPROVALS -->
+        <section id="tab-coordinator" class="hidden animate-fade-in space-y-6">
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between gap-4">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-900">Coordinator Portal</h2>
+                    <p class="text-slate-500 text-sm">Review volunteer registrations, approve logged service hours, and manage event capacity.</p>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <span class="px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-xs font-bold" id="pending-count-badge">3 Approvals Pending</span>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-4 bg-slate-50 border-b border-slate-200">
+                    <h3 class="font-bold text-slate-800 text-sm uppercase tracking-wider">Pending Registrations & Logged Hours</h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-slate-600">
+                        <thead class="bg-slate-100 text-xs font-semibold uppercase text-slate-500 border-b border-slate-200">
+                            <tr>
+                                <th class="p-4">Volunteer</th>
+                                <th class="p-4">Event / Activity</th>
+                                <th class="p-4">Claimed Hours</th>
+                                <th class="p-4">Submission Date</th>
+                                <th class="p-4 text-center">Decision</th>
+                            </tr>
+                        </thead>
+                        <tbody id="coordinator-approval-list" class="divide-y divide-slate-200">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: IMPACT ANALYTICS -->
+        <section id="tab-analytics" class="hidden animate-fade-in space-y-6">
+            <!-- High level stats -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Active Volunteers</span>
+                    <p class="text-3xl font-black text-slate-900 mt-2">1,248</p>
+                    <span class="text-xs font-semibold text-brand-600"><i class="fa-solid fa-arrow-trend-up"></i> +14% this month</span>
+                </div>
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Service Hours Logged</span>
+                    <p class="text-3xl font-black text-slate-900 mt-2">18,420 hrs</p>
+                    <span class="text-xs font-semibold text-brand-600"><i class="fa-solid fa-check-double"></i> Verified by coordinators</span>
+                </div>
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Estimated Social Impact Value</span>
+                    <p class="text-3xl font-black text-slate-900 mt-2">$423,660</p>
+                    <span class="text-xs font-semibold text-slate-500">Based on $23/hr national benchmark</span>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="font-bold text-slate-800 mb-4">Monthly Volunteer Hours Contribution</h3>
+                    <div class="h-64">
+                        <canvas id="hoursChart"></canvas>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="font-bold text-slate-800 mb-4">Hours Distribution by Cause</h3>
+                    <div class="h-64">
+                        <canvas id="causeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- MODAL 1: Create New Opportunity (Coordinator/Director Only) -->
+    <div id="modal-create-event" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 animate-fade-in max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 class="text-lg font-bold text-slate-900">Create Volunteering Program</h3>
+                <button onclick="closeModal('modal-create-event')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <form id="form-create-event" onsubmit="handleCreateEvent(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Event Title</label>
+                    <input type="text" id="event-title" required placeholder="e.g. Weekend Youth Literacy Drive" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Cause</label>
+                        <select id="event-cause" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-brand-500">
+                            <option>Education</option>
+                            <option>Environment</option>
+                            <option>Food Security</option>
+                            <option>Healthcare</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Commitment</label>
+                        <select id="event-commitment" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-brand-500">
+                            <option>One-time</option>
+                            <option>Weekly</option>
+                            <option>Flexible</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Location</label>
+                        <input type="text" id="event-location" required placeholder="e.g. City Community Center" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-brand-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Slots Available</label>
+                        <input type="number" id="event-slots" min="1" required value="15" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-brand-500">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Description</label>
+                    <textarea id="event-desc" rows="3" required placeholder="Brief description of duties and required skills..." class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-brand-500"></textarea>
+                </div>
+                <div class="flex justify-end space-x-2 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeModal('modal-create-event')" class="px-4 py-2 border border-slate-300 text-slate-600 rounded-lg text-sm font-semibold hover:bg-slate-50">Cancel</button>
+                    <button type="submit" class="px-5 py-2 bg-brand-500 hover:bg-brand-600 text-slate-900 font-bold rounded-lg text-sm">Publish Event</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 2: Log Past Hours -->
+    <div id="modal-log-hours" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-fade-in">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 class="text-lg font-bold text-slate-900">Self-Log Volunteer Hours</h3>
+                <button onclick="closeModal('modal-log-hours')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <form id="form-log-hours" onsubmit="handleLogHours(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Select Activity / Event</label>
+                    <select id="log-event-select" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-brand-500">
+                        <!-- Options generated dynamically -->
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Date Conducted</label>
+                        <input type="date" required id="log-date" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-brand-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Hours Spent</label>
+                        <input type="number" step="0.5" min="0.5" required id="log-hours-val" value="3.0" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-brand-500">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Summary of Work Done</label>
+                    <textarea id="log-notes" rows="2" required placeholder="What did you assist with?" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-brand-500"></textarea>
+                </div>
+                <div class="flex justify-end space-x-2 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeModal('modal-log-hours')" class="px-4 py-2 border border-slate-300 text-slate-600 rounded-lg text-sm font-semibold hover:bg-slate-50">Cancel</button>
+                    <button type="submit" class="px-5 py-2 bg-brand-500 hover:bg-brand-600 text-slate-900 font-bold rounded-lg text-sm">Submit for Verification</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-slate-900 text-white px-5 py-3 rounded-xl shadow-2xl border border-slate-800 flex items-center space-x-3 transform translate-y-20 opacity-0 transition-all duration-300 z-50">
+        <i id="toast-icon" class="fa-solid fa-circle-check text-brand-500 text-lg"></i>
+        <span id="toast-msg" class="text-sm font-medium">Action completed successfully!</span>
+    </div>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // Default Mock Data Store
+        let opportunities = [
+            {
+                id: 1,
+                title: 'Urban Tree Plantation Drive',
+                cause: 'Environment',
+                commitment: 'One-time',
+                location: 'Central City Park',
+                slots: 8,
+                totalSlots: 20,
+                date: 'Oct 24, 2026',
+                description: 'Join us for a community green initiative planting native trees to combat urban heat islands.',
+                badge: 'Popular'
+            },
+            {
+                id: 2,
+                title: 'After-School Math Tutoring',
+                cause: 'Education',
+                commitment: 'Weekly',
+                location: 'Eastside Community Hub',
+                slots: 4,
+                totalSlots: 10,
+                date: 'Every Tuesday',
+                description: 'Provide 1-on-1 basic math and reading support to elementary school children.',
+                badge: 'Urgent'
+            },
+            {
+                id: 3,
+                title: 'Weekend Food Rescue & Meal Packing',
+                cause: 'Food Security',
+                commitment: 'Flexible',
+                location: 'Hope Food Bank Warehouse',
+                slots: 12,
+                totalSlots: 25,
+                date: 'Saturdays',
+                description: 'Sort donated surplus groceries and assemble fresh meal boxes for families in need.',
+                badge: 'High Impact'
+            },
+            {
+                id: 4,
+                title: 'Community Health Screening Assistant',
+                cause: 'Healthcare',
+                commitment: 'One-time',
+                location: 'St. Jude Center',
+                slots: 5,
+                totalSlots: 15,
+                date: 'Nov 02, 2026',
+                description: 'Assist doctors and nurses with registration, queue guidance, and basic health kit distribution.',
+                badge: 'New'
+            }
+        ];
+
+        let userShifts = [
+            { id: 101, eventId: 1, title: 'Urban Tree Plantation Drive', cause: 'Environment', date: 'Oct 24, 2026', hours: 4.0, status: 'Enrolled' },
+            { id: 102, eventId: 3, title: 'Weekend Food Rescue', cause: 'Food Security', date: 'Oct 03, 2026', hours: 3.5, status: 'Verified' },
+            { id: 103, eventId: 2, title: 'After-School Math Tutoring', cause: 'Education', date: 'Sep 28, 2026', hours: 2.0, status: 'Verified' }
+        ];
+
+        let pendingApprovals = [
+            { id: 201, volunteer: 'Sarah Jenkins', event: 'Weekend Food Rescue', hours: 4.0, date: 'Oct 08, 2026' },
+            { id: 202, volunteer: 'Alex Rivera', event: 'Urban Tree Plantation Drive', hours: 3.5, date: 'Oct 09, 2026' },
+            { id: 203, volunteer: 'David Chen', event: 'Community Health Screening', hours: 5.0, date: 'Oct 09, 2026' }
+        ];
+
+        let currentRole = 'volunteer';
+        let chartsInitialized = false;
+
+        // Initialize Application
+        document.addEventListener('DOMContentLoaded', () => {
+            renderOpportunities();
+            renderUserShifts();
+            renderApprovals();
+            populateLogSelectOptions();
+        });
+
+        // Tab Switcher
+        function switchTab(tabId) {
+            const tabs = ['opportunities', 'my-activities', 'coordinator', 'analytics'];
+            tabs.forEach(t => {
+                document.getElementById(`tab-${t}`).classList.add('hidden');
+                const navBtn = document.getElementById(`nav-${t}`);
+                if (navBtn) {
+                    navBtn.classList.remove('bg-slate-800', 'text-brand-500');
+                    navBtn.classList.add('text-slate-300');
+                }
+            });
+
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            const activeNav = document.getElementById(`nav-${tabId}`);
+            if (activeNav) {
+                activeNav.classList.add('bg-slate-800', 'text-brand-500');
+                activeNav.classList.remove('text-slate-300');
+            }
+
+            if (tabId === 'analytics' && !chartsInitialized) {
+                initCharts();
+                chartsInitialized = true;
+            }
+        }
+
+        // Role Selector Switcher
+        function handleRoleChange(role) {
+            currentRole = role;
+            const btnCreate = document.getElementById('btn-create-opportunity');
+
+            if (role === 'coordinator' || role === 'director') {
+                btnCreate.classList.remove('hidden');
+                showToast(`Switched to ${role.toUpperCase()} mode. Admin controls active.`);
+            } else {
+                btnCreate.classList.add('hidden');
+                showToast("Switched to Volunteer Mode.");
+            }
+            renderOpportunities();
+        }
+
+        // Render Opportunities Grid
+        function renderOpportunities() {
+            const grid = document.getElementById('opportunities-grid');
+            grid.innerHTML = '';
+
+            const causeFilter = document.getElementById('filter-cause').value;
+            const commitFilter = document.getElementById('filter-commitment').value;
+            const searchVal = document.getElementById('search-events').value.toLowerCase();
+
+            const filtered = opportunities.filter(op => {
+                const matchesCause = causeFilter === 'all' || op.cause === causeFilter;
+                const matchesCommit = commitFilter === 'all' || op.commitment === commitFilter;
+                const matchesSearch = op.title.toLowerCase().includes(searchVal) || op.location.toLowerCase().includes(searchVal);
+                return matchesCause && matchesCommit && matchesSearch;
+            });
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `<div class="col-span-full text-center py-12 text-slate-400">
+                    <i class="fa-solid fa-folder-open text-4xl mb-2"></i>
+                    <p>No volunteering opportunities found matching filters.</p>
+                </div>`;
+                return;
+            }
+
+            filtered.forEach(op => {
+                const isEnrolled = userShifts.some(s => s.eventId === op.id);
+                const card = document.createElement('div');
+                card.className = 'bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all flex flex-col justify-between overflow-hidden';
+                card.innerHTML = `
+                    <div class="p-5">
+                        <div class="flex justify-between items-start mb-3">
+                            <span class="px-2.5 py-1 bg-brand-50 text-brand-700 font-semibold text-xs rounded-md">${op.cause}</span>
+                            <span class="text-xs font-semibold px-2 py-0.5 bg-slate-100 text-slate-600 rounded">${op.commitment}</span>
+                        </div>
+                        <h3 class="font-bold text-slate-900 text-lg mb-1">${op.title}</h3>
+                        <p class="text-slate-500 text-xs mb-3"><i class="fa-solid fa-location-dot text-slate-400 mr-1"></i> ${op.location} • <i class="fa-solid fa-calendar text-slate-400 ml-1 mr-1"></i> ${op.date}</p>
+                        <p class="text-slate-600 text-sm line-clamp-2 mb-4">${op.description}</p>
+                    </div>
+
+                    <div class="px-5 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+                        <span class="text-xs font-medium text-slate-500">
+                            <strong class="text-slate-800">${op.slots}</strong> slots remaining
+                        </span>
+                        ${isEnrolled 
+                            ? `<button disabled class="px-3 py-1.5 bg-slate-200 text-slate-500 font-semibold text-xs rounded-lg cursor-not-allowed">
+                                <i class="fa-solid fa-check mr-1"></i> Enrolled
+                               </button>`
+                            : `<button onclick="applyForEvent(${op.id})" class="px-3.5 py-1.5 bg-brand-500 hover:bg-brand-600 text-slate-900 font-bold text-xs rounded-lg transition-colors">
+                                Apply Now
+                               </button>`
+                        }
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // Apply for Opportunity
+        function applyForEvent(id) {
+            const op = opportunities.find(o => o.id === id);
+            if (!op || op.slots <= 0) return;
+
+            op.slots -= 1;
+            userShifts.push({
+                id: Date.now(),
+                eventId: op.id,
+                title: op.title,
+                cause: op.cause,
+                date: op.date,
+                hours: 3.0,
+                status: 'Enrolled'
+            });
+
+            renderOpportunities();
+            renderUserShifts();
+            populateLogSelectOptions();
+            showToast(`Successfully enrolled in "${op.title}"!`);
+        }
+
+        // Render User Shifts Table
+        function renderUserShifts() {
+            const tbody = document.getElementById('user-shifts-list');
+            tbody.innerHTML = '';
+
+            let totalVerifiedHours = 0;
+
+            userShifts.forEach(shift => {
+                if (shift.status === 'Verified') totalVerifiedHours += shift.hours;
+
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50 transition-colors';
+                tr.innerHTML = `
+                    <td class="p-4 font-semibold text-slate-800">${shift.title}</td>
+                    <td class="p-4"><span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-xs">${shift.cause}</span></td>
+                    <td class="p-4 text-xs text-slate-500">${shift.date}</td>
+                    <td class="p-4 font-bold text-slate-700">${shift.hours} hrs</td>
+                    <td class="p-4">
+                        <span class="px-2.5 py-1 rounded-full text-xs font-bold ${
+                            shift.status === 'Verified' ? 'bg-emerald-100 text-emerald-800' :
+                            shift.status === 'Pending Verification' ? 'bg-amber-100 text-amber-800' :
+                            'bg-blue-100 text-blue-800'
+                        }">
+                            ${shift.status}
+                        </span>
+                    </td>
+                    <td class="p-4 text-right">
+                        ${shift.status === 'Enrolled' 
+                            ? `<button onclick="cancelShift(${shift.id})" class="text-xs text-red-600 hover:text-red-800 font-semibold">Cancel</button>`
+                            : `<span class="text-xs text-slate-400">Locked</span>`
+                        }
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('stat-user-hours').innerText = `${totalVerifiedHours.toFixed(1)} hrs`;
+        }
+
+        // Cancel Enrolled Shift
+        function cancelShift(shiftId) {
+            const index = userShifts.findIndex(s => s.id === shiftId);
+            if (index > -1) {
+                const shift = userShifts[index];
+                const op = opportunities.find(o => o.id === shift.eventId);
+                if (op) op.slots += 1;
+                userShifts.splice(index, 1);
+                renderOpportunities();
+                renderUserShifts();
+                showToast("Enrollment cancelled.");
+            }
+        }
+
+        // Render Coordinator Approvals
+        function renderApprovals() {
+            const tbody = document.getElementById('coordinator-approval-list');
+            tbody.innerHTML = '';
+
+            document.getElementById('pending-count-badge').innerText = `${pendingApprovals.length} Pending`;
+
+            if (pendingApprovals.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-slate-400">All volunteer submissions have been processed!</td></tr>`;
+                return;
+            }
+
+            pendingApprovals.forEach((app, idx) => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50';
+                tr.innerHTML = `
+                    <td class="p-4 font-semibold text-slate-800">${app.volunteer}</td>
+                    <td class="p-4 text-slate-600">${app.event}</td>
+                    <td class="p-4 font-bold text-slate-700">${app.hours} hrs</td>
+                    <td class="p-4 text-xs text-slate-400">${app.date}</td>
+                    <td class="p-4 text-center space-x-2">
+                        <button onclick="approveLog(${idx})" class="px-3 py-1 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs rounded-md shadow-sm">
+                            <i class="fa-solid fa-check mr-1"></i> Approve
+                        </button>
+                        <button onclick="rejectLog(${idx})" class="px-3 py-1 bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs rounded-md shadow-sm">
+                            <i class="fa-solid fa-xmark mr-1"></i> Reject
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function approveLog(index) {
+            const item = pendingApprovals[index];
+            pendingApprovals.splice(index, 1);
+            renderApprovals();
+            showToast(`Approved ${item.hours} hrs for ${item.volunteer}.`);
+        }
+
+        function rejectLog(index) {
+            pendingApprovals.splice(index, 1);
+            renderApprovals();
+            showToast("Hours submission rejected.", "info");
+        }
+
+        // Populate Log Select Options
+        function populateLogSelectOptions() {
+            const select = document.getElementById('log-event-select');
+            select.innerHTML = '';
+            userShifts.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.title;
+                opt.innerText = s.title;
+                select.appendChild(opt);
+            });
+        }
+
+        // Modals Handlers
+        function openCreateModal() { document.getElementById('modal-create-event').classList.remove('hidden'); }
+        function openLogHoursModal() { document.getElementById('modal-log-hours').classList.remove('hidden'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+        function handleCreateEvent(e) {
+            e.preventDefault();
+            const newOp = {
+                id: Date.now(),
+                title: document.getElementById('event-title').value,
+                cause: document.getElementById('event-cause').value,
+                commitment: document.getElementById('event-commitment').value,
+                location: document.getElementById('event-location').value,
+                slots: parseInt(document.getElementById('event-slots').value),
+                totalSlots: parseInt(document.getElementById('event-slots').value),
+                date: 'Upcoming',
+                description: document.getElementById('event-desc').value,
+                badge: 'New'
+            };
+
+            opportunities.unshift(newOp);
+            renderOpportunities();
+            closeModal('modal-create-event');
+            e.target.reset();
+            showToast("New Volunteering Program Published!");
+        }
+
+        function handleLogHours(e) {
+            e.preventDefault();
+            const title = document.getElementById('log-event-select').value;
+            const hours = parseFloat(document.getElementById('log-hours-val').value);
+
+            userShifts.push({
+                id: Date.now(),
+                eventId: 0,
+                title: title || 'General Volunteer Support',
+                cause: 'Community',
+                date: document.getElementById('log-date').value,
+                hours: hours,
+                status: 'Pending Verification'
+            });
+
+            renderUserShifts();
+            closeModal('modal-log-hours');
+            showToast("Hours submitted to Coordinator for verification!");
+        }
+
+        function filterOpportunities() { renderOpportunities(); }
+
+        // Download Certificate Simulation
+        function downloadCertificate() {
+            showToast("Generating verified PDF Certificate...");
+            setTimeout(() => {
+                alert("📜 ImpactPulse Official Certificate\n\nThis certifies that Volunteer User has logged over 25+ verified hours of community service with ImpactPulse NGO Network.");
+            }, 500);
+        }
+
+        // Notification Toast
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        // Analytics Chart Setup
+        function initCharts() {
+            const ctx1 = document.getElementById('hoursChart').getContext('2d');
+            new Chart(ctx1, {
+                type: 'line',
+                data: {
+                    labels: ['May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'],
+                    datasets: [{
+                        label: 'Total Hours',
+                        data: [1800, 2200, 2800, 3100, 3900, 4620],
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            const ctx2 = document.getElementById('causeChart').getContext('2d');
+            new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Education', 'Environment', 'Food Security', 'Healthcare'],
+                    datasets: [{
+                        data: [35, 25, 25, 15],
+                        backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6']
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+    </script>
+</body>
+</html>
